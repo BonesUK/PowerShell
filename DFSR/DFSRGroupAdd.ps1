@@ -21,7 +21,7 @@ Add-DfsrConnection -GroupName $DfsrReplicationGroupName -SourceComputerName $Dfs
 # Set membership on WEB1 (Primary)
 Foreach ($ReplicatedFolder in $ReplicatedFolders) 
 { 
-    Set-DfsrMembership -GroupName $DfsrReplicationGroupName -FolderName $ReplicatedFolder -ContentPath "D:\$ReplicatedFolder" -ComputerName $DfsrWeb1 -PrimaryMember $True -StagingPathQuotaInMB 250 -Force 
+    Set-DfsrMembership -GroupName $DfsrReplicationGroupName -FolderName $ReplicatedFolder -ContentPath "D:\$($ReplicatedFolder.Foldername)" -ComputerName $DfsrWeb1 -PrimaryMember $True -StagingPathQuotaInMB 250 -Force 
 }
 
 # Set membership on WEB2 (Secondary)
