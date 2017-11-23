@@ -1,13 +1,13 @@
 ﻿<#
 
 .Synopsys
-Initiates connection to a server using either SSH or RDP
+Initiates connection to an item in your secretserver database using either SSH or RDP protocol
 
 .Description
-Initiates a session to an Iomart Device using credentials pulled from the Secret Server. This function will use the computername as a search string to look for an associated secret. If none is found you will be prompted to enter a secret ID. You must specify connection type (either SSH or RDP).
+Initiates a session to a device using credentials pulled from the Secret Server. This function will use the computername as a search string to look for an associated secret. If none is found you will be prompted to enter a secret ID. You must specify connection type (either SSH or RDP).
 
 .Parameter Computername
-CI Name or IP Address of device you want to connect to. Can be either a Windows or Linux machine.
+CI Name or IP Address of device you want to connect to. Can be either a Windows (RDP) or Linux (SSH) machine.
 
 .Parameter SecretId
 Specify a Secret ID to convert to a credential object when connecting to the device
