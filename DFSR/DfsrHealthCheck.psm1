@@ -210,7 +210,7 @@ function Get-DfsrHealthCheck {
             [Parameter(Mandatory=$true)]$CritThreshold
         )
 
-    $checkName                  = "DFSRRepl_$replicatedFolder"
+    $checkName                  = "DFSRRepl_$folder"
     $dfsrReplicatedFolderInfo   = Get-DfsrFolderInformation -replicatedFolder $folder
     $backloggedServers          = $null
     $errorServers               = $null
@@ -245,7 +245,6 @@ function Get-DfsrHealthCheck {
             }
             elseif ( $backlogCheck.backlogCount -ge $warnThreshold )
             {
-                [System.String]$status = '1'
                 Write-Warning "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount). Check DFSR replication health."
                 $backloggedServers += $dfsrDestinationComputer
                 $backlogErrors += 1
@@ -258,18 +257,35 @@ function Get-DfsrHealthCheck {
         if ($errorServers.count -gt 0) 
         {
             if ($errorServers -ge 2) {$errorServers = $errorServers -join ","}
+            [System.String]$status = '2'
             $message = "Failed to calculate backlog for folder $folder $errorServers. Check DFSR health on server."
         }
         elseif ($backlogErrors -gt 0)
         {
-            if ($backlogErrors -ge 2) {$backloggedServers = $backloggedServers -join ","}
+            if ($backlogErrors -ge 2) 
+            {
+                $backloggedServers = $backloggedServers -join ","
+            }
+            if ($backlogTotal -ge $critthreshold )
+            { 
+                [System.String]$status = '2'
+            }
+            elseif ($backlogTotal -ge $warnThreshold )
+            { 
+                [System.String]$status = '1'
+            }
             $message = "Found backlog for replicated folder $folder to $backloggedServers. Total backlog for all targets is $backlogTotal. Check DFSR health on server."
+        }
+        elseif ($backlogErrors -eq 0 -and $errorServers.count -eq 0)
+        {
+            $message = "Total backlog for replicated folder $folder to all partner servers is $backlogTotal."
+            $status  = 0
         }
     }
     [PSCustomObject]@{
         'status'    = $status
         'message'   = $message
-        'Checkname' = $backlogCheck.checkName
+        'Checkname' = $checkName
     }
 }
 # End region DFSR Healthcheck functions

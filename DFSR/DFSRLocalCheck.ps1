@@ -10,7 +10,7 @@
 #>
 
 # Location of output file
-$outputfile = 'C:\Program Files\WindowsPowerShell\Modules\DFSHealthCheck\Outputfile.csv'
+$outputfile = 'C:\Program Files\WindowsPowerShell\Modules\DFSRHealthCheck\Outputfile.csv'
 
 # Pull in the content from output file
 $output = Import-Csv $outputfile
