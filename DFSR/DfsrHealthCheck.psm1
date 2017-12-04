@@ -210,50 +210,62 @@ function Get-DfsrHealthCheck {
             [Parameter(Mandatory=$true)]$CritThreshold
         )
 
-    $checkName = $checkName = "DFSRRepl_$replicatedFolder"
-    $dfsrReplicatedFolderInfo = Get-DfsrFolderInformation -replicatedFolder $folder
+    $checkName                  = "DFSRRepl_$replicatedFolder"
+    $dfsrReplicatedFolderInfo   = Get-DfsrFolderInformation -replicatedFolder $folder
+    $backloggedServers          = $null
+    $errorServers               = $null
+    $backlogErrors              = 0
+    [System.String]$status      = '2'
+    $message                    = "Unable to confirm DFSR connection details for folder $folder. Check DFSR services are started."
+    $backlogTotal               = 0
 
     if ($dfsrReplicatedFolderInfo.ConnectionWarning)
     {
-        [System.String]$status = '2'
-        $message = "Unable to confirm connection details for folder $folder on $env:COMPUTERNAME. Check DFSR services are started."
-        Write-Warning "Unable to confirm connection details for folder $folder on $env:COMPUTERNAME. Check DFSR services are started."
+        Write-Warning "Unable to confirm DFSR connection details for folder $folder. Check DFSR services are started."
     }
     else
     {
-        Write-Verbose "Checking for backlog for replicated folder $folder"
-        $backlogCheck = Get-DfsrBacklogCount -replicatedFolder $folder -dfsrGroup $($dfsrReplicatedFolderInfo.DfsrGroup) -dfsrSourceComputer $($dfsrReplicatedFolderInfo.DfsrSourceComputer) -dfsrDestinationComputer $($dfsrReplicatedFolderInfo.DfsrDestinationComputer) -Verbose
+        foreach ($dfsrDestinationComputer in $($dfsrReplicatedFolderInfo.DfsrDestinationComputer))
+        {
+            Write-Verbose "Checking for backlog for replicated folder $folder to $dfsrDestinationComputer"
+            $backlogCheck = Get-DfsrBacklogCount -replicatedFolder $folder -dfsrGroup $($dfsrReplicatedFolderInfo.DfsrGroup) -dfsrSourceComputer $($dfsrReplicatedFolderInfo.DfsrSourceComputer) -dfsrDestinationComputer $DfsrDestinationComputer -Verbose
+            $backlogTotal += $backlogCheck.backlogCount
 
-        if ($backlogCheck.ErrorStatus)
-        {
-            [System.String]$status = '2'
-            $message = "Unable to calculate backlog for folder $folder on $env:COMPUTERNAME. Check DFSR services are started."
-            Write-Warning "Unable to calculate backlog for folder $folder on $env:COMPUTERNAME. Check DFSR services are started."
+            if ($backlogCheck.ErrorStatus)
+            {
+                Write-Warning "Unable to calculate backlog for folder $folder to destination computer $DfsrDestinationComputer. Check DFSR services are started."
+                $message = "Unable to calculate backlog for folder $folder to destination computer $DfsrDestinationComputer. Check DFSR services are started."                
+                [System.String]$errorServers += $dfsrDestinationComputer
+            }
+            elseif ( $backlogCheck.backlogCount -ge $critthreshold )
+            {
+                Write-warning "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount). Check DFSR replication health urgently."
+                $backloggedServers += $dfsrDestinationComputer
+                $backlogErrors += 1
+            }
+            elseif ( $backlogCheck.backlogCount -ge $warnThreshold )
+            {
+                [System.String]$status = '1'
+                Write-Warning "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount). Check DFSR replication health."
+                $backloggedServers += $dfsrDestinationComputer
+                $backlogErrors += 1
+            }
+            elseif ( $backlogCheck.backlogCount -ge 0 )
+            {
+                [System.String]$status = '0'
+            }
         }
-        elseif ( $backlogCheck.backlogCount -ge $critthreshold )
+        if ($errorServers.count -gt 0) 
         {
-            [System.String]$status = '2'
-            $message = "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount). Check DFSR replication health urgently."
-            Write-warning "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount). Check DFSR replication health urgently."
+            if ($errorServers -ge 2) {$errorServers = $errorServers -join ","}
+            $message = "Failed to calculate backlog for folder $folder $errorServers. Check DFSR health on server."
         }
-        elseif ( $backlogCheck.backlogCount -ge $warnThreshold )
+        elseif ($backlogErrors -gt 0)
         {
-            [System.String]$status = '1'
-            $message = "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount). Check DFSR replication health."
-            Write-Warning "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount). Check DFSR replication health."
-        }
-        elseif ( $backlogCheck.backlogCount -gt 0 )
-        {
-            [System.String]$status = '0'
-            $message = "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is $($backlogCheck.backlogCount)."
-        }
-        elseif ( $backlogCheck.backlogCount -eq 0 )
-        {
-            [System.String]$status = '0'
-            $message = "Backlog count for folder `"$folder`" in replication group `"$($dfsrReplicatedFolderInfo.DfsrGroup)`" is 0."
+            if ($backlogErrors -ge 2) {$backloggedServers = $backloggedServers -join ","}
+            $message = "Found backlog for replicated folder $folder to $backloggedServers. Total backlog for all targets is $backlogTotal. Check DFSR health on server."
         }
     }
-    
     [PSCustomObject]@{
         'status'    = $status
         'message'   = $message
