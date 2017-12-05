@@ -134,6 +134,7 @@ function Get-DfsrFolderInformation {
     {
         Write-Verbose "Checking DFSR Connection info for $replicatedFolder"
         $dfsrConnections = Get-DfsrConnection -GroupName $($dfsrFolderInfo.Groupname) | Where-Object { $_.SourceComputerName -eq $env:COMPUTERNAME }
+        Write-Verbose "$env:COMPUTERNAME has connections to $($dfsrConnections.DestinationComputerName.count) partner servers for replicated folder `"$replicatedFolder`"."
     }
     catch 
     {
