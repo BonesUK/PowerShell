@@ -27,32 +27,35 @@ function New-SsRdpSession {
     param (
       [Parameter(Mandatory=$true,Position=1)]
       $ComputerName,
-      [string]
-      $SecretId
+      [Parameter(Position=2)]
+      [string]$SecretId,
+      [string]$crm
     )
-    ForEach ($computer in $ComputerName)
+    if ($PSBoundParameters.ContainsKey('searchterm'))
     {
-        if (!$PSBoundParameters.ContainsKey('SecretID'))
-        {
-            $secretID = (Get-SSSecretDetails -SearchTerm $computer)
-            $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
-        }
-        else 
-        {
-            $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
-        }
-        if ($credential)
-        {
-            $User = $Credential.UserName
-            $Password = $Credential.GetNetworkCredential().Password
-            cmdkey.exe /generic:$computer /user:$User /pass:$Password
-            mstsc.exe /v $Computer /f
-        }
-        else 
-        {
-            Write-Warning "Something went wrong, no credential was found."
-            Write-Warning "Try selecting a different credential or use the 'secretID' parameter"
-        }
+        $secretID = (Get-SSSecretDetails -SearchTerm $crm -verbose)
+        $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
+    }
+    elseif (!$PSBoundParameters.ContainsKey('SecretID'))
+    {
+        $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -verbose)
+        $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
+    }
+    else 
+    {
+        $credential = (Get-Secret -SecretID $SecretID -As Credential -verbose).Credential
+    }
+    if ($credential)
+    {
+        $User = $Credential.UserName
+        $Password = $Credential.GetNetworkCredential().Password
+        cmdkey.exe /generic:$ComputerName /user:$User /pass:$Password
+        mstsc.exe /v $ComputerName /f
+    }
+    else 
+    {
+        Write-Warning "Something went wrong, no credential was found."
+        Write-Warning "Try selecting a different credential or use the 'secretID' parameter"
     }
 }
 

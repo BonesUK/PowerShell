@@ -49,7 +49,11 @@ function New-SSServerConnection {
   
     ForEach ($computer in $ComputerName)
     {
-        if (!$PSBoundParameters.ContainsKey('SecretID'))
+        if ($PSBoundParameters.ContainsKey('Crm'))
+        {
+            $SecretID = Get-SSSecretDetails -SearchTerm $Crm
+        }
+        elseif (!$PSBoundParameters.ContainsKey('SecretID'))
         {
             $SecretID = Get-SSSecretDetails -SearchTerm $ComputerName
         }
@@ -68,14 +72,10 @@ function New-SSServerConnection {
                 }
                 else 
                 {
-                    Write-Warning "Please specify connection type using parameter -SSH or -RDP"
+                    Write-Warning "Unable to locate credential for $ComputerName"
+                    Write-Warning "Try again using the SecretID or CRM parameters."
                 }
             }
-        }
-        else 
-        {
-            Write-Warning "Unable to locate credential for $ComputerName"
-            Write-Warning "Please try again using the parameter SecretID"
         }
     }
 }

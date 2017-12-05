@@ -26,13 +26,36 @@ function New-SSSshSession{
     param (
         [Parameter(Mandatory=$true)]
         [System.String]$ComputerName,
-        [System.string]$SecretId
+        [System.string]$SecretId,
+        [System.string]$crm
     )
 
-    $credential = Get-Secret -computername $Computername -SecretId $SecretId
-    $password = $credential.password
-    $connectionArgs = $user + "@" + $computername
-    
-    Write-Verbose "Launching putty session to $ComputerName using SecretID $($credential.SecretID)"
-    & "C:\Program Files (x86)\PuTTY\putty.exe" -ssh $connectionArgs -pw $password
+    if ($PSBoundParameters.ContainsKey('crm'))
+    {
+        $secretID = (Get-SSSecretDetails -SearchTerm $crm -verbose -Ssh)
+        $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
+    }
+    elseif (!$PSBoundParameters.ContainsKey('SecretID'))
+    {
+        $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -Ssh -verbose)
+        $credential = Get-Secret -SearchTerm $Computername -SecretId $SecretId
+    }
+    else 
+    {
+        $credential = (Get-Secret -SecretID $SecretID -As Credential -verbose).Credential
+    }
+    if ($credential)
+    {
+        $User = $Credential.UserName
+        $Password = $Credential.GetNetworkCredential().Password
+        $connectionArgs = $user + "@" + $computername
+
+        Write-Verbose "Launching putty session to $ComputerName using SecretID $($credential.SecretID)"
+        & "C:\Program Files (x86)\PuTTY\putty.exe" -ssh $connectionArgs -pw $password
+    }
+    else 
+    {
+        Write-Warning "Something went wrong, no credential was found."
+        Write-Warning "Try selecting a different credential or use the 'secretID' parameter"
+    }
 }
