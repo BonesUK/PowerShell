@@ -1,85 +1,81 @@
 ﻿<#
 
-.Synopsys
-Initiates connection to an item in your secretserver database using either SSH or RDP protocol
+.Synopsis
+Initiates connection to a server using a credential object retrieved from the SecretServer database.
 
 .Description
-Initiates a session to a device using credentials pulled from the Secret Server. This function will use the computername as a search string to look for an associated secret. If none is found you will be prompted to enter a secret ID. You must specify connection type (either SSH or RDP).
+Initiates an RDP or SSH session to a device using credentials pulled from the Secret Server. This function will use the computername as a search string to look for an associated secret. If none is found you will be prompted to enter a secret ID. 
 
 .Parameter Computername
-CI Name or IP Address of device you want to connect to. Can be either a Windows (RDP) or Linux (SSH) machine.
+CI Name or IP Address of device you want to connect to. Can be a Windows or Linux server.
 
 .Parameter SecretId
-Specify a Secret ID to convert to a credential object when connecting to the device
+Specify a Secret ID to pull from SecretServer and convert to a credential object when connecting to the device
+
+.Parameter Protocol
+Use this switch to force connection via SSH or Rdp. If not specified the default will be Rdp.
+
+.Parameter Searchterm
+Enter a searchterm such as customerID to search for associated secrets in the SecretServer database.
 
 .Example
 # Initiate RDP Connection to a server using the IP address
-New-IomServerConnection 212.181.160.12 -Rdp
+New-SsServerConnection 212.181.160.12 -Rdp
 
 .Example
 # Initiate SSH Connection to a server by specifying the secret ID
-New-IomServerConnection 212.181.160.12 -SecretId 5478 -Ssh
+New-SsServerConnection MyLinuxServer -SecretId 5478 -Ssh
 
-.Example 
-# Initiate RDP Connection to multiple servers. Note you can only specify a single Secret ID for this track.
-$machines = "225.64.25.46","FILESERVER02","64.22.11.23"; New-SSServerConnection -Computername $machines -Rdp
+.Example
+# Initiate SSH Connection to multiple servers
+New-SsServerConnection -Computername Windows1,Windows2,Windows3 -SecretID 1234 -Rdp
 
 #>
 
 function New-SSServerConnection {
- 
-  param 
-  (
-    [Parameter(Mandatory=$true,Position=1)]$ComputerName,
-    [Switch]$Rdp,
-    [Switch]$Ssh,
-    [string]$SecretId
-  )
- 
-  $ComputerName | ForEach-Object {
-    if ($PSBoundParameters.ContainsKey('SecretID'))
+    [cmdletbinding()]
+    param 
+    (
+        [Parameter(Mandatory=$true,Position=1)]
+        [System.String]$ComputerName,
+        [Parameter(Position=2)]
+        [System.String]$SecretId,
+        [Parameter(Mandatory=$true,Position=3)]
+        [ValidateSet('Rdp','Ssh')]
+        [System.string]$Protocol="Rdp",
+        [Parameter()]
+        [System.String]$Crm
+    )
+  
+    ForEach ($computer in $ComputerName)
     {
-      $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
-      $User = $Credential.UserName
-      $Password = $Credential.GetNetworkCredential().Password
-      cmdkey.exe /generic:$_ /user:$User /pass:$Password
-    }
-    else 
-    {
-       $credential = (Get-Secret -SearchTerm $ComputerName -As Credential).Credential
-       if ($credential){
-            $User = $Credential.UserName
-            $Password = $Credential.GetNetworkCredential().Password
-            cmdkey.exe /generic:$computername /user:$User /pass:$Password
-       }
-    }
-    if ($credential)
-    {
-        if ($credential.count -lt 2) {
-           if ($PSBoundParameters.ContainsKey('rdp')) { 
-                    mstsc.exe /v $computername /f 
+        if (!$PSBoundParameters.ContainsKey('SecretID'))
+        {
+            $SecretID = Get-SSSecretDetails -SearchTerm $ComputerName
+        }
+        else 
+        {
+        $SecretID = Get-SSSecretDetails -SearchTerm $SecretID
+            if ($SecretID)
+            {
+                if ($PSBoundParameters.ContainsKey('rdp')) 
+                { 
+                    New-SSRdpSession -ComputerName $computername -SecretID $secretID
                 }
-
-           elseif ($PSBoundParameters.ContainsKey('ssh')){ 
-                $connectionArgs = $user + "@" + $computername
-                & "C:\Program Files (x86)\PuTTY\putty.exe" -ssh $connectionArgs -pw $password
-           }
-           else {
-                Write-Warning "Please specify connection type using parameter -SSH or -RDP"
-           }
+                elseif ($PSBoundParameters.ContainsKey('ssh'))
+                { 
+                    New-SsSshSession -Computername $computername -SecretID $secretID
+                }
+                else 
+                {
+                    Write-Warning "Please specify connection type using parameter -SSH or -RDP"
+                }
+            }
         }
-        Else {
-            $matches = Get-Secret -Searchterm $computername
-            Write-Warning "Multiple Secrets associated to this CI"
-            Write-Warning "Matches: $($matches.secretID)"
-            Write-Warning "Please try again specifying the correct SecretID"
+        else 
+        {
+            Write-Warning "Unable to locate credential for $ComputerName"
+            Write-Warning "Please try again using the parameter SecretID"
         }
     }
-    else 
-    {
-        Write-Warning "Unable to locate credential for $ComputerName"
-        Write-Warning "Please try again using the parameter SecretID"
-    }
-  }
 }
-
