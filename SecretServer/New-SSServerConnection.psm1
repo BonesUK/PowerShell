@@ -64,10 +64,12 @@ function New-SSServerConnection {
             {
                 if ($PSBoundParameters.ContainsKey('rdp')) 
                 { 
+                    Write-Verbose "Launching RDP Session to $computername using SecretID $secretID"
                     New-SSRdpSession -ComputerName $computername -SecretID $secretID
                 }
                 elseif ($PSBoundParameters.ContainsKey('ssh'))
                 { 
+                    Write-Verbose "Launching Putty Session to $computername using SecretID $secretID"
                     New-SsSshSession -Computername $computername -SecretID $secretID
                 }
                 else 
