@@ -49,14 +49,14 @@ function New-SSServerConnection {
   
     ForEach ($computer in $ComputerName)
     {
-        if ($PSBoundParameters.ContainsKey('SecretID'))
+        if (!$PSBoundParameters.ContainsKey('SecretID'))
         {
-            New-SSRdpSession -ComputerName $computername -SecretID $secretID
+            $SecretID = Get-SSSecretDetails -SearchTerm $ComputerName
         }
         else 
         {
-        $credential = Get-SSSecretDetails -SearchTerm $ComputerName
-            if ($credential)
+        $SecretID = Get-SSSecretDetails -SearchTerm $SecretID
+            if ($SecretID)
             {
                 if ($PSBoundParameters.ContainsKey('rdp')) 
                 { 

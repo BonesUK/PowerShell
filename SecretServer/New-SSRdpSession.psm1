@@ -30,7 +30,6 @@ function New-SsRdpSession {
       [string]
       $SecretId
     )
-
     ForEach ($computer in $ComputerName)
     {
         if (!$PSBoundParameters.ContainsKey('SecretID'))

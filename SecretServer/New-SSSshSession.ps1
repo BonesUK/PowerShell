@@ -29,7 +29,7 @@ function New-SSSshSession{
         [System.string]$SecretId
     )
 
-    $credential = Get-IhSecret -computername $Computername
+    $credential = Get-Secret -computername $Computername -SecretId $SecretId
     $password = $credential.password
     $connectionArgs = $user + "@" + $computername
     

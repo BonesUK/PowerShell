@@ -34,12 +34,14 @@ function Select-SSSecret {
     {
         $secretID = $credential[$secretSelection].SecretID
         Write-Verbose "Retrieving SecretID $secretID"
-        $credential = Get-Secret -SecretID $secretID -As Credential -erroraction stop
+        $credential = Get-Secret -SecretID $secretID -As Credential -erroraction stop -verbose
+        Write-Verbose $credential
     }
     catch
     {
-        Write-Warning "Unable to locate Secret with ID $($credential[$secretSelection].SecretID)"
-        Write-Warning "Try connecting again by specifying the SecretID manually"
+        Write-Warning "a Unable to locate Secret with ID $($credential[$secretSelection].SecretID)"
+        Write-Warning "a Try connecting again by specifying the SecretID manually"
+        Throw
     } 
 }
 function Get-SSSecretDetails {
@@ -56,8 +58,8 @@ function Get-SSSecretDetails {
     {
         if ($credential.count -gt 1)
         {
-            Write-Warning "Located $($credential.count) secrets associated with searchterm $searchterm :"
-            Select-SsSecret -Credential $credential 
+            Write-Warning "d Located $($credential.count) secrets associated with searchterm $searchterm :"
+            Select-SsSecret -Credential $credential
         }
         else
         {
@@ -74,7 +76,7 @@ function Get-SSSecretDetails {
         {
             if ($credential.count -gt 1)
             {
-                Write-Warning "Located $($credential.count) secrets associated with searchterm $searchterm :"
+                Write-Warning "b Located $($credential.count) secrets associated with searchterm $searchterm :"
                 Select-SsSecret -Credential $credential               
             }
             else 
@@ -85,9 +87,10 @@ function Get-SSSecretDetails {
         }
         else 
         {
-            Write-Warning "Unable to locate any valid credentials for $searchterm. You can try to connect again using the `'SecretID`' parameter if you know it."
-            $warningMessage = $true
+            Write-Warning "c Unable to locate any valid credentials for $searchterm. You can try to connect again using the `'SecretID`' parameter if you know it."
         }
     }
-    $credential
+    Write-Output $credential
+    Write-Verbose $credential
 }
+
