@@ -19,31 +19,23 @@ function Select-SSSecret {
     [CmdletBinding()]
     Param
     (
-        [Parameter(Mandatory=$true)][Object[]]$Credential
+        [Parameter(Mandatory=$true)][Object[]]$secretmatch
     )
     
     Write-Output "No`tSecretID`tSecretName"
     Write-Output "==`t==========`t======================================="
-    For ($i=1; $i -lt ($credential.count)+1; $i++) 
+    For ($i=1; $i -lt ($secretmatch.count)+1; $i++) 
     {
         $no = $i-1
-        Write-Output "$i`t$($credential[$no].SecretID)`t`t$($credential[$no].Secretname)"
+        Write-Output "$i`t$($secretmatch[$no].SecretID)`t`t$($secretmatch[$no].Secretname)"
     }
     [Int]$secretSelection = ((Read-host "`nSelect a credential to use for this connection")-1)
-    try 
-    {
-        $secretID = $credential[$secretSelection].SecretID
-        Write-Verbose "Retrieving SecretID $secretID"
-        $credential = Get-Secret -SecretID $secretID -As Credential -erroraction stop -verbose
-        Write-Verbose $credential
-    }
-    catch
-    {
-        Write-Warning "a Unable to locate Secret with ID $($credential[$secretSelection].SecretID)"
-        Write-Warning "a Try connecting again by specifying the SecretID manually"
-        Throw
-    } 
+
+    $secretID = $secretmatch[$secretSelection].SecretID
+
+    return $secretID
 }
+
 function Get-SSSecretDetails {
     [cmdletbinding()]
     Param
@@ -52,37 +44,37 @@ function Get-SSSecretDetails {
     )
 
     Write-Verbose "Attempting to locate Domain Admin credentials related to $searchterm"
-    $credential = Get-Secret -SearchTerm $Searchterm | Where-Object {$_.secretname -match 'iomart|domain admin' -and $_.secretname -notmatch 'firewall|switch'}
+    $Secrets = Get-Secret -SearchTerm $Searchterm | Where-Object {$_.secretname -match 'iomart|domain admin' -and $_.secretname -notmatch 'firewall|switch'}
     
-    if ($credential)
+    if ($Secrets)
     {
-        if ($credential.count -gt 1)
+        if ($Secrets.count -gt 1)
         {
-            Write-Warning "d Located $($credential.count) secrets associated with searchterm $searchterm :"
-            Select-SsSecret -Credential $credential
+            Write-Warning "d Located $($Secrets.count) secrets associated with searchterm $searchterm :"
+            Select-SsSecret -secretmatch $Secrets
         }
         else
         {
-            Write-Verbose "Using SecretID: $($credential.SecretID) - $($credential.SecretName)"
-            $credential = Get-Secret -SecretID $credential.secretID -As Credential
+            Write-Verbose "Using SecretID: $($Secrets.SecretID) - $($Secrets.SecretName)"
+            $SecretID = $Secrets.SecretID
         }
     }
     else
     {
         Write-Verbose "Unable to locate admin credential for $searchterm. Attempting to search for device credential"
-        $Credential = Get-Secret -SearchTerm $Searchterm
+        $Secrets = Get-Secret -SearchTerm $Searchterm
 
-        if ($credential)
+        if ($secrets)
         {
-            if ($credential.count -gt 1)
+            if ($secrets.count -gt 1)
             {
-                Write-Warning "b Located $($credential.count) secrets associated with searchterm $searchterm :"
-                Select-SsSecret -Credential $credential               
+                Write-Warning "b Located $($secrets.count) secrets associated with searchterm $searchterm :"
+                Select-SsSecret -secretmatch $secrets
             }
             else 
             {
-                Write-Verbose "Located SecretID: $($credential.SecretID) - $($credential.SecretName)"
-                $credential = Get-Secret -SecretID $credential.secretID -As Credential
+                Write-Verbose "Located SecretID: $($secrets.SecretID) - $($secrets.SecretName)"
+                $secretID = $secrets.secretID
             }
         }
         else 
@@ -90,7 +82,6 @@ function Get-SSSecretDetails {
             Write-Warning "c Unable to locate any valid credentials for $searchterm. You can try to connect again using the `'SecretID`' parameter if you know it."
         }
     }
-    Write-Output $credential
-    Write-Verbose $credential
+    return $secretID
 }
 
