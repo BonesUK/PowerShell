@@ -46,10 +46,11 @@ function Get-SSSecretDetails {
     else
     {
         Write-Verbose "Unable to locate admin credential for `"$searchterm`". Attempting to search for device credential"
-        $Secrets = Get-Secret -SearchTerm $Searchterm -Verbose
+        $Secrets = Get-Secret -SearchTerm $Searchterm
 
         if ($secrets)
         {
+            Write-Verbose "Found $($secrets.count) secrets"
             if ($secrets.count -gt 1)
             {
                 Write-Warning "Located $($secrets.count) secrets associated with searchterm `"$searchterm`" :"
@@ -63,7 +64,7 @@ function Get-SSSecretDetails {
         }
         else 
         {
-            Write-Warning "Unable to locate any valid credentials for $searchterm. Try connecting again using the parameter `"SecretID`" or `"searchterm`"."
+            Write-Warning "Unable to locate any valid credentials for $searchterm. Try connecting again using the parameter SecretID or searchterm."
         }
     }
 }
