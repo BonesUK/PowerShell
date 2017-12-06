@@ -48,7 +48,7 @@ function New-SsRdpSession {
 
         if ($credential)
         {
-            Write-Verbose "Attempting to launch RDP session with SecretID $($credential.secretID)"
+            Write-Verbose "Attempting to launch RDP session with SecretID $secretID"
             $User = $Credential.UserName
             $Password = $Credential.GetNetworkCredential().Password
             cmdkey.exe /generic:$ComputerName /user:$User /pass:$Password
