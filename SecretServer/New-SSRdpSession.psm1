@@ -30,28 +30,39 @@ function New-SsRdpSession {
     )
     if ($PSBoundParameters.ContainsKey('Searchterm'))
     {
+        Write-Verbose "Attempting to locate secrets for $searchterm"
         $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose)
-        $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
     }
     elseif (!$PSBoundParameters.ContainsKey('SecretID'))
     {
+        Write-Verbose "Attempting to locate secret for $ComputerName"
         $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -verbose)
-        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
     }
     else 
     {
-        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
+        Write-Verbose "Fetching Secret $secretID for RDP session"
     }
-    if ($credential)
+    if ($secretID)
     {
-        $User = $Credential.UserName
-        $Password = $Credential.GetNetworkCredential().Password
-        cmdkey.exe /generic:$ComputerName /user:$User /pass:$Password
-        mstsc.exe /v $ComputerName /f
+        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
+
+        if ($credential)
+        {
+            Write-Verbose "Attempting to launch RDP session with SecretID $($credential.secretID)"
+            $User = $Credential.UserName
+            $Password = $Credential.GetNetworkCredential().Password
+            cmdkey.exe /generic:$ComputerName /user:$User /pass:$Password
+            mstsc.exe /v $ComputerName /f
+        }
+        else 
+        {
+            Write-Warning 'Something went wrong, no credential was found.'
+            Write-Warning 'Try selecting a different credential or use the `"secretID`" parameter'
+        }
     }
     else 
     {
-        Write-Warning "Something went wrong, no credential was found."
-        Write-Warning "Try selecting a different credential or use the 'secretID' parameter"
+        Write-Warning 'Something went wrong, no credential was found.'
+        Write-Warning 'Try selecting a different credential or use the parameters `"secretID`" or `"searchterm`"'
     }
 }
