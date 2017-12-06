@@ -34,16 +34,16 @@ function New-SSSshSession{
     if ($PSBoundParameters.ContainsKey('Searchterm'))
     {
         $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose -Ssh)
-        $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
+        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction SilentlyContinue).Credential
     }
     elseif (!$PSBoundParameters.ContainsKey('SecretID'))
     {
         $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -Ssh -verbose)
-        $credential = Get-Secret -SearchTerm $Computername -SecretId $SecretId
+        $credential = Get-Secret -SearchTerm $Computername -SecretId $SecretId -ErrorAction SilentlyContinue
     }
     else 
     {
-        $credential = (Get-Secret -SecretID $SecretID -As Credential -verbose).Credential
+        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
     }
     if ($credential)
     {

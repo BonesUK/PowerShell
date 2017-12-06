@@ -20,7 +20,7 @@ function Get-SSSecretDetails {
         [Parameter()][Switch]$Ssh
     )
 
-    $secretID = 'N/A'
+    $secretID = $null
 
     if ($PSBoundParameters.ContainsKey('Ssh'))
     {
@@ -65,10 +65,9 @@ function Get-SSSecretDetails {
         }
         else 
         {
-            Write-Warning "Unable to locate any valid credentials for $searchterm. You can try to connect again using the `'SecretID`' parameter if you know it."
+            Write-Warning "Unable to locate any valid credentials for $searchterm. Try connecting again using the `"SecretID`" or `"searchterm`" parameters."
         }
     }
     Write-Verbose "Returned SecretID $secretID"
     $secretID
 }
-

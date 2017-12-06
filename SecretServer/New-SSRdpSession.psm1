@@ -36,11 +36,11 @@ function New-SsRdpSession {
     elseif (!$PSBoundParameters.ContainsKey('SecretID'))
     {
         $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -verbose)
-        $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
+        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
     }
     else 
     {
-        $credential = (Get-Secret -SecretID $SecretID -As Credential -verbose).Credential
+        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
     }
     if ($credential)
     {
