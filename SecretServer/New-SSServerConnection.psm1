@@ -62,7 +62,8 @@ function New-SSServerConnection {
         }
         else 
         {
-            $SecretID = (Get-Secret -SecretID $SecretID -As Credential).SecretID
+            Write-Verbose "Looking for Secret matching ID $secretID"
+            $SecretID = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction SilentlyContinue).SecretID
         }
         if ($SecretID)
         {
