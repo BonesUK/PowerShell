@@ -20,8 +20,6 @@ function Get-SSSecretDetails {
         [Parameter()][Switch]$Ssh
     )
 
-    $secretID = $null
-
     if ($PSBoundParameters.ContainsKey('Ssh'))
     {
         Write-Verbose "Searching for Linux passwords for $Searchterm. This may take a minute..."
@@ -37,37 +35,35 @@ function Get-SSSecretDetails {
         if ($Secrets.count -gt 1)
         {
             Write-Warning "Located $($Secrets.count) secrets associated with searchterm $searchterm :"
-            $SecretID = Select-SsSecret -secretmatch $Secrets
+            Select-SsSecret -secretmatch $Secrets -Verbose
         }
         else
         {
             Write-Verbose "Using SecretID: $($Secrets.SecretID) - $($Secrets.SecretName)"
-            $SecretID = $Secrets.SecretID
+            $Secrets.SecretID
         }
     }
     else
     {
         Write-Verbose "Unable to locate admin credential for `"$searchterm`". Attempting to search for device credential"
-        $Secrets = Get-Secret -SearchTerm $Searchterm
+        $Secrets = Get-Secret -SearchTerm $Searchterm -Verbose
 
         if ($secrets)
         {
             if ($secrets.count -gt 1)
             {
                 Write-Warning "Located $($secrets.count) secrets associated with searchterm `"$searchterm`" :"
-                $secretID = Select-SsSecret -secretmatch $secrets
+                Select-SsSecret -secretmatch $secrets -Verbose
             }
             else 
             {
                 Write-Verbose "Located SecretID: $($secrets.SecretID) - $($secrets.SecretName)"
-                $secretID = $secrets.secretID
+                $secrets.secretID
             }
         }
         else 
         {
-            Write-Warning "Unable to locate any valid credentials for $searchterm. Try connecting again using the `"SecretID`" or `"searchterm`" parameters."
+            Write-Warning "Unable to locate any valid credentials for $searchterm. Try connecting again using the parameter `"SecretID`" or `"searchterm`"."
         }
     }
-    Write-Verbose "Returned SecretID $secretID"
-    $secretID
 }
