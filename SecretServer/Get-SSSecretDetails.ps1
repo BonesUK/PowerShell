@@ -1,38 +1,17 @@
 <#
 .Synopsis
-Pulls all matching secrets from SecretServer and prompts user to select one to convert to credential object.
+    Pulls all matching secrets from SecretServer and prompts user to select one to convert to credential object.
 
 .Description
-Retrieves all Secrets matching a searchterm and prompts user to select one to retrieve the SecretID in order to pipe to other commands, such as New-SSServerConnection
+    Retrieves all Secrets matching a searchterm and prompts user to select one to retrieve the SecretID in order to pipe to other commands, such as New-SSServerConnection
 
 .Parameter Searchterm
-Customer ID or name to search for associated entries in the SecretServer database.
+    Customer ID or name to search for associated entries in the SecretServer database.
 
 .Example
-Retrieve all Secrets matching customer ID 1094756217
-Get-SSSecretID -Searchterm 1094756217
+    Retrieve all Secrets matching customer ID 1094756217
+    Get-SSSecretID -Searchterm 1094756217
 #>
-
-function Select-SSSecret {
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory=$true)][Object[]]$secretmatch
-    )
-    
-    Write-Host "No`tSecretID`tSecretName"
-    Write-Host "==`t==========`t======================================="
-    For ($i=1; $i -lt ($secretmatch.count)+1; $i++) 
-    {
-        $no = $i-1
-        Write-Host "$i`t$($secretmatch[$no].SecretID)`t`t$($secretmatch[$no].Secretname)"
-    }
-    [Int]$secretSelection = ((Read-host "`nSelect a credential to use for this connection")-1)
-
-    $secretmatch[$secretSelection].SecretID
-    Write-Verbose "Returned SecretID $($secretmatch[$secretSelection].SecretID)"
-}
-
 function Get-SSSecretDetails {
     [cmdletbinding()]
     Param
