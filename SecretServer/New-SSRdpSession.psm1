@@ -29,11 +29,11 @@ function New-SsRdpSession {
       $ComputerName,
       [Parameter(Position=2)]
       [string]$SecretId,
-      [string]$crm
+      [string]$Searchterm
     )
-    if ($PSBoundParameters.ContainsKey('crm'))
+    if ($PSBoundParameters.ContainsKey('Searchterm'))
     {
-        $secretID = (Get-SSSecretDetails -SearchTerm $crm -verbose)
+        $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose)
         $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
     }
     elseif (!$PSBoundParameters.ContainsKey('SecretID'))

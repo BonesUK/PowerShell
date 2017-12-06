@@ -1,10 +1,9 @@
 <#
-
 .Synopsis
 Pulls all matching secrets from SecretServer and prompts user to select one to convert to credential object.
 
 .Description
-Retrieves all Secrets matching a searchterm and prompts user to select one to convert into a credential object for piping to other commands, such as New-SSServerConnection
+Retrieves all Secrets matching a searchterm and prompts user to select one to retrieve the SecretID in order to pipe to other commands, such as New-SSServerConnection
 
 .Parameter Searchterm
 Customer ID or name to search for associated entries in the SecretServer database.
@@ -12,7 +11,6 @@ Customer ID or name to search for associated entries in the SecretServer databas
 .Example
 Retrieve all Secrets matching customer ID 1094756217
 Get-SSSecretID -Searchterm 1094756217
-
 #>
 
 function Select-SSSecret {
@@ -31,9 +29,8 @@ function Select-SSSecret {
     }
     [Int]$secretSelection = ((Read-host "`nSelect a credential to use for this connection")-1)
 
-    [Int]$secretID = $secretmatch[$secretSelection].SecretID
-
-    return $secretID
+    $secretmatch[$secretSelection].SecretID
+    Write-Verbose "Returned SecretID $($secretmatch[$secretSelection].SecretID)"
 }
 
 function Get-SSSecretDetails {
@@ -43,6 +40,8 @@ function Get-SSSecretDetails {
         [Parameter()][String]$Searchterm,
         [Parameter()][Switch]$Ssh
     )
+
+    $secretID = 'N/A'
 
     if ($PSBoundParameters.ContainsKey('Ssh'))
     {
@@ -59,7 +58,7 @@ function Get-SSSecretDetails {
         if ($Secrets.count -gt 1)
         {
             Write-Warning "Located $($Secrets.count) secrets associated with searchterm $searchterm :"
-            Select-SsSecret -secretmatch $Secrets
+            $SecretID = Select-SsSecret -secretmatch $Secrets
         }
         else
         {
@@ -69,15 +68,15 @@ function Get-SSSecretDetails {
     }
     else
     {
-        Write-Verbose "Unable to locate admin credential for $searchterm. Attempting to search for device credential"
+        Write-Verbose "Unable to locate admin credential for `"$searchterm`". Attempting to search for device credential"
         $Secrets = Get-Secret -SearchTerm $Searchterm
 
         if ($secrets)
         {
             if ($secrets.count -gt 1)
             {
-                Write-Warning "Located $($secrets.count) secrets associated with searchterm $searchterm :"
-                Select-SsSecret -secretmatch $secrets
+                Write-Warning "Located $($secrets.count) secrets associated with searchterm `"$searchterm`" :"
+                $secretID = Select-SsSecret -secretmatch $secrets
             }
             else 
             {
@@ -90,6 +89,7 @@ function Get-SSSecretDetails {
             Write-Warning "Unable to locate any valid credentials for $searchterm. You can try to connect again using the `'SecretID`' parameter if you know it."
         }
     }
-    return $secretID
+    Write-Verbose "Returned SecretID $secretID"
+    $secretID
 }
 

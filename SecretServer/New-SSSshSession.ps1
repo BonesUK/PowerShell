@@ -27,12 +27,12 @@ function New-SSSshSession{
         [Parameter(Mandatory=$true)]
         [System.String]$ComputerName,
         [System.string]$SecretId,
-        [System.string]$crm
+        [System.string]$Searchterm
     )
 
-    if ($PSBoundParameters.ContainsKey('crm'))
+    if ($PSBoundParameters.ContainsKey('Searchterm'))
     {
-        $secretID = (Get-SSSecretDetails -SearchTerm $crm -verbose -Ssh)
+        $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose -Ssh)
         $credential = (Get-Secret -SecretID $SecretID -As Credential).Credential
     }
     elseif (!$PSBoundParameters.ContainsKey('SecretID'))

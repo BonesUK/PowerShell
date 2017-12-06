@@ -44,40 +44,44 @@ function New-SSServerConnection {
         [ValidateSet('Rdp','Ssh')]
         [System.string]$Protocol="Rdp",
         [Parameter()]
-        [System.String]$Crm
+        [System.String]$Searchterm
     )
   
     ForEach ($computer in $ComputerName)
     {
-        if ($PSBoundParameters.ContainsKey('Crm'))
-        {
-            $SecretID = Get-SSSecretDetails -SearchTerm $Crm
+        if ($PSBoundParameters.ContainsKey('Searchterm'))
+        {            
+            Write-Verbose "No secretID specified. Searching for credentials matching searchterm $searchterm"
+            $SecretID = Get-SSSecretDetails -SearchTerm $Searchterm
         }
         elseif (!$PSBoundParameters.ContainsKey('SecretID'))
-        {
+        {   
+            Write-Verbose "No secretID specified. Searching for credentials for $computername"
             $SecretID = Get-SSSecretDetails -SearchTerm $ComputerName
         }
         else 
         {
-        $SecretID = Get-SSSecretDetails -SearchTerm $SecretID
-            if ($SecretID)
-            {
-                if ($PSBoundParameters.ContainsKey('rdp')) 
-                { 
-                    Write-Verbose "Launching RDP Session to $computername using SecretID $secretID"
-                    New-SSRdpSession -ComputerName $computername -SecretID $secretID
-                }
-                elseif ($PSBoundParameters.ContainsKey('ssh'))
-                { 
-                    Write-Verbose "Launching Putty Session to $computername using SecretID $secretID"
-                    New-SsSshSession -Computername $computername -SecretID $secretID
-                }
-                else 
-                {
-                    Write-Warning "Unable to locate credential for $ComputerName"
-                    Write-Warning "Try again using the SecretID or CRM parameters."
-                }
+            $SecretID = (Get-Secret -SecretID $SecretID -As Credential).SecretID
+        }
+        if ($SecretID)
+        {
+            Write-Verbose "SecretID $SecretID was retrieved. Attempting to launch session."
+
+            if ($Protocol -eq 'rdp') 
+            { 
+                Write-Verbose "Launching RDP Session to $computername using SecretID $secretID"
+                New-SSRdpSession -ComputerName $computername -SecretID $secretID
             }
+            else
+            { 
+                Write-Verbose "Launching Putty Session to $computername using SecretID $secretID"
+                New-SsSshSession -Computername $computername -SecretID $secretID
+            }
+        }
+        else 
+        {
+            Write-Warning "Unable to locate credential for $ComputerName"
+            Write-Warning "Try again using the SecretID or Searchterm parameters."
         }
     }
 }
