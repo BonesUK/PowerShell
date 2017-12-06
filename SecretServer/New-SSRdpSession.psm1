@@ -55,5 +55,3 @@ function New-SsRdpSession {
         Write-Warning "Try selecting a different credential or use the 'secretID' parameter"
     }
 }
-
-
