@@ -20,25 +20,27 @@
     New-SsSshSession mylinuxserver -SecretId 1234
 
 .Example
-    Initiate SSH connection using servername and searchterm:
-    New-SsSshSession mylinuxserver -Searchterm customerid
+    New-SsSshSession mylinuxserver -Searchterm customerid    
+    Initiates an SSH connection using servername and searchterm parameters
+    
 #>
-function New-SSSshSession{
+function New-SsSshSession {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true,position=1)]
         [System.String]$ComputerName,
         [System.string]$SecretId,
-        [System.string]$Searchterm
+        [System.string]$Searchterm,
+        [Switch]$Showall
     )
 
     if ($PSBoundParameters.ContainsKey('Searchterm'))
     {
-        $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose -Ssh)
+        $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose -Ssh -Showall:$showall)
         $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction SilentlyContinue).Credential
     }
     elseif (!$PSBoundParameters.ContainsKey('SecretID'))
     {
-        $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -Ssh -verbose)
+        $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -Ssh -verbose -Showall:$showall)
         $credential = Get-Secret -SearchTerm $Computername -SecretId $SecretId -ErrorAction SilentlyContinue
     }
     else 

@@ -9,32 +9,41 @@
     Customer ID or name to search for associated entries in the SecretServer database.
 
 .Example
+    Get-SSSecretID -Searchterm 1094756217    
     Retrieve all Secrets matching customer ID 1094756217
-    Get-SSSecretID -Searchterm 1094756217
 #>
-function Get-SSSecretDetails {
+function Get-SsSecretDetails {
     [cmdletbinding()]
     Param
     (
         [Parameter()][String]$Searchterm,
+        [Switch]$Showall,
         [Parameter()][Switch]$Ssh
     )
 
     if ($PSBoundParameters.ContainsKey('Ssh'))
     {
         Write-Verbose "Searching for Linux passwords for $Searchterm. This may take a minute..."
-        $Secrets = Get-Secret -SearchTerm $Searchterm -As Credential | Where-Object {$_.username -match 'root'}
+        $Secrets = Get-Secret -SearchTerm $Searchterm -As Credential | Where-Object {$_.username -match 'root' -or $_.username -match 'linux'}
     }
     else 
     {
-        Write-Verbose "Attempting to locate Domain Admin credentials related to $searchterm"
-        $Secrets = Get-Secret -SearchTerm $Searchterm | Where-Object {$_.secretname -match 'iomart|domain|admin' -and $_.secretname -notmatch 'firewall|switch|vpn'}            
+        if ($Showall -eq $true)
+        {
+            Write-Verbose "Showall option selected - Retrieving all credentials for $Searchterm"
+            $Secrets = Get-Secret -SearchTerm $Searchterm
+        }
+        else 
+        {
+            Write-Verbose "Attempting to locate Domain Admin credentials related to $searchterm"
+            $Secrets = Get-Secret -SearchTerm $Searchterm | Where-Object {$_.secretname -match 'iomart|domain|admin' -and $_.secretname -notmatch 'firewall|switch|vpn'}                        
+        }
     }
     if ($Secrets)
     {
         if ($Secrets.count -gt 1)
         {
-            Write-Warning "Located $($Secrets.count) secrets associated with searchterm $searchterm :"
+            Write-Warning "Located $($Secrets.count) secrets associated with searchterm $searchterm`:"
             Select-SsSecret -secretmatch $Secrets -Verbose
         }
         else
@@ -53,7 +62,7 @@ function Get-SSSecretDetails {
             Write-Verbose "Found $($secrets.count) secrets"
             if ($secrets.count -gt 1)
             {
-                Write-Warning "Located $($secrets.count) secrets associated with searchterm `"$searchterm`" :"
+                Write-Warning "Located $($secrets.count) secrets associated with searchterm `"$searchterm`"`:"
                 Select-SsSecret -secretmatch $secrets -Verbose
             }
             else 

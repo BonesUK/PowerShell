@@ -16,53 +16,58 @@
     New-SsRdpSession 212.181.160.12
 
 .Example
-    Initiate RDP Connection to a server by specifying the secret ID
     New-SsRdpSession 212.181.160.12 -SecretId 5478
+    Initiates an RDP Connection to a server by specifying the computername and secret ID.   
 #>
 function New-SsRdpSession {
- 
-    param (
-      [Parameter(Mandatory=$true,Position=1)]
-      $ComputerName,
-      [Parameter(Position=2)]
-      [string]$SecretId,
-      [string]$Searchterm
-    )
-    if ($PSBoundParameters.ContainsKey('Searchterm'))
-    {
-        Write-Verbose "Attempting to locate secrets for $searchterm"
-        $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose)
-    }
-    elseif (!$PSBoundParameters.ContainsKey('SecretID'))
-    {
-        Write-Verbose "Attempting to locate secret for $ComputerName"
-        $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -verbose)
-    }
-    else 
-    {
-        Write-Verbose "Fetching Secret $secretID for RDP session"
-    }
-    if ($secretID)
-    {
-        $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
-
-        if ($credential)
-        {
-            Write-Verbose "Attempting to launch RDP session with SecretID $secretID"
-            $User = $Credential.UserName
-            $Password = $Credential.GetNetworkCredential().Password
-            cmdkey.exe /generic:$ComputerName /user:$User /pass:$Password
-            mstsc.exe /v $ComputerName /f
-        }
-        else 
-        {
-            Write-Warning 'Something went wrong, no credential was found.'
-            Write-Warning 'Try selecting a different credential or use the `"secretID`" parameter'
-        }
-    }
-    else 
-    {
-        Write-Warning 'Something went wrong, no credential was found.'
-        Write-Warning 'Try selecting a different credential or use the parameters `"secretID`" or `"searchterm`"'
-    }
-}
+    
+       param (
+         [Parameter(Mandatory=$true,Position=1)]
+         $ComputerName,
+         [Parameter(Position=2)]
+         [string]$SecretId,
+         [string]$Searchterm,
+         [Switch]$Showall
+       )
+       if ($PSBoundParameters.ContainsKey('Searchterm'))
+       {
+           Write-Verbose "Attempting to locate secrets for $searchterm"
+           $secretID = (Get-SSSecretDetails -SearchTerm $Searchterm -verbose -Showall:$showall)
+       }
+       elseif (!$PSBoundParameters.ContainsKey('SecretID'))
+       {
+           Write-Verbose "Attempting to locate secret for $ComputerName"
+           $secretID = (Get-SSSecretDetails -SearchTerm $ComputerName -verbose -Showall:$showall)
+       }
+       else 
+       {
+           Write-Verbose "Fetching Secret $secretID for RDP session"
+       }
+       if ($secretID)
+       {
+           $credential = (Get-Secret -SecretID $SecretID -As Credential -ErrorAction silentlycontinue).Credential
+   
+           if ($credential -and ($credential -ne 'Could not access password'))
+           {
+               Write-Verbose "Attempting to launch RDP session with SecretID $secretID"
+               $User = $Credential.UserName
+               $Password = $Credential.GetNetworkCredential().Password
+               cmdkey.exe /generic:$ComputerName /user:$User /pass:$Password
+               mstsc.exe /v $ComputerName /f
+           }
+           elseif ($credential -and ($credential -eq 'Could not access password'))
+           {
+               Write-Verbose "Could not access password for secretID $secretID. Secret may not be a valid credential for this device."
+           }
+           else 
+           {
+               Write-Warning 'Something went wrong, no valid credential was found.'
+               Write-Warning 'Try selecting a different credential or use the "secretID" parameter'
+           }
+       }
+       else 
+       {
+           Write-Warning 'Something went wrong, no credential was found.'
+           Write-Warning 'Try selecting a different credential or use the parameters "secretID" or "searchterm"'
+       }
+   }

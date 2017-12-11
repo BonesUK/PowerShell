@@ -10,23 +10,30 @@
 
 .Example
     Select-SsSecret -Secretmatch $secrets
+    This command will take the secret objects contained within the $secrets variable, and return the secret ID of the secret as a string for use in other cmdlets.
+
+.Example
+    $secrets = Get-Secret -SearchTerm customerid; Select-SsSecret -Secretmatch $secrets
+    Pull secret objects into a variable then pipe to Select-SsSecret to get the desired SecretID.
 #>
-function Select-SSSecret {
+function Select-SsSecret {
     [CmdletBinding()]
     Param
     (
         [Parameter(Mandatory=$true)][Object[]]$secretmatch
     )
     
-    Write-Host "No`tSecretID`tSecretName"
-    Write-Host "==`t==========`t======================================="
-    For ($i=1; $i -lt ($secretmatch.count)+1; $i++) 
-    {
-        $no = $i-1
-        Write-Host "$i`t$($secretmatch[$no].SecretID)`t`t$($secretmatch[$no].Secretname)"
-    }
-    [Int]$secretSelection = ((Read-host "`nSelect a credential to use for this connection")-1)
+    Write-Host "ID`tSecretName"
+    Write-Host "----`t------------------"
 
-    $secretmatch[$secretSelection].SecretID
-    Write-Verbose "Returned SecretID $($secretmatch[$secretSelection].SecretID)"
+    Foreach ($secret in $secretmatch)
+    {
+        Write-Host "$($secret.secretID)`t$($secret.SecretName)"
+    }
+
+    [System.String]$secretSelection = Read-host "`nSelect a credential to use for this connection"
+
+    Write-Verbose "Selected SecretID: $secretSelection"
+    
+    return $secretSelection
 }

@@ -17,23 +17,27 @@
 .PARAMETER Searchterm
     Enter a searchterm such as customerID to search for associated secrets in the SecretServer database.
 
+.PARAMETER Showall
+    Specify this parameter to bypass the default behaviour of listing Domain/Admin credentials, and list all credentials matching the device name or searchterm.
+
 .EXAMPLE
-    Initiate RDP Connection to a server using the IP address:
     New-SsServerConnection 212.181.160.12 -Protocol Rdp
-
+    Initiate RDP Connection to a server using the IP address
+    
 .EXAMPLE
-    Initiate SSH Connection to a server by specifying the secret ID:
     New-SsServerConnection MyLinuxServer -SecretId 5478 -Protocol Ssh
+    Initiates an SSH Connection to a server by specifying the secret ID
 
 .EXAMPLE
-    Initiate SSH Connection to multiple servers:
-    New-SsServerConnection -Computername Windows1,Windows2,Windows3 -SecretID 1234 -Protocol Rdp
+    New-SsServerConnection -Computername Windows1,Windows2,Windows3 -SecretID 1234 -Protocol Rdp    
+    Initiates an SSH Connection to multiple servers with a specified secretID.
+    Note only one SecretID can be selected so the command will only work for devices that use the same credentials.
 
 .EXAMPLE
-    Launch RDP Session using computername and searchterm, using positional parameters:
     New-SSServerConnection 45.35.104.11 rdp -Searchterm CUSTOMERID
+    Launches RDP Session using computername and searchterm, using positional parameters:
 #>
-function New-SSServerConnection {
+function New-SsServerConnection {
     [cmdletbinding()]
     param 
     (
@@ -45,7 +49,9 @@ function New-SSServerConnection {
         [ValidateSet('Rdp','Ssh')]
         [System.string]$Protocol="Rdp",
         [Parameter()]
-        [System.String]$Searchterm
+        [System.String]$Searchterm,
+        [Parameter()]
+        [Switch]$Showall
     )
   
     ForEach ($computer in $ComputerName)
@@ -53,12 +59,12 @@ function New-SSServerConnection {
         if ($PSBoundParameters.ContainsKey('Searchterm'))
         {            
             Write-Verbose "No secretID specified. Searching for credentials matching searchterm $searchterm"
-            $SecretID = Get-SSSecretDetails -SearchTerm $Searchterm
+            $SecretID = Get-SSSecretDetails -SearchTerm $Searchterm -Showall:$showall
         }
         elseif (!$PSBoundParameters.ContainsKey('SecretID'))
         {   
             Write-Verbose "No secretID specified. Searching for credentials for $computername"
-            $SecretID = Get-SSSecretDetails -SearchTerm $ComputerName
+            $SecretID = Get-SSSecretDetails -SearchTerm $ComputerName -Showall:$showall
         }
         else 
         {
@@ -82,7 +88,7 @@ function New-SSServerConnection {
         }
         else 
         {
-            Write-Warning "Unable to locate credential for $ComputerName"
+            Write-Warning "Failed to load credential for $ComputerName"
             Write-Warning "Try again using the SecretID or Searchterm parameters."
         }
     }
